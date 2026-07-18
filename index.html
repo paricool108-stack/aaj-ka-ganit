@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aaj Ka Ganit — 5 Sawaal Chunauti</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board-bg:#141924; --board-bg-2:#1b2230;
+  --grid-line: rgba(122,150,190,0.06);
+  --paper:#E4E8ED; --paper-shadow-line: rgba(58,90,120,0.16);
+  --ink:#20242b; --ink-soft:#4a5260;
+  --kraft:#8a6f47; --kraft-dark:#6e5738; --kraft-active:#c98a2c;
+  --stamp-red:#a3342a; --wrong:#c1543b; --correct:#2f7a63; --gold:#d9a441;
+  --paper-fold:#cfd5da; --focus:#7cc4ff;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(90,110,150,0.10), transparent 40%),
+    radial-gradient(circle at 85% 75%, rgba(140,110,60,0.08), transparent 45%),
+    repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 34px),
+    repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 34px),
+    linear-gradient(180deg, var(--board-bg) 0%, var(--board-bg-2) 100%);
+  font-family:'Nunito','Noto Sans Devanagari',sans-serif;
+  color:var(--ink);
+  padding:14px 14px 60px;
+}
+.wrap{max-width:800px;margin:0 auto;}
+
+.plaque{
+  background:linear-gradient(180deg,#232b3a,#1a2130);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:10px; padding:16px 18px; margin-bottom:12px;
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.plaque h1{font-family:'Special Elite','Noto Sans Devanagari',monospace; color:#eef1f5; font-size:1.2rem; margin:0 0 2px;}
+.plaque .sub{color:#9aa6b8; font-size:0.8rem; font-weight:600;}
+.stat-row{display:flex; gap:8px; flex-wrap:wrap;}
+.stat-chip{background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:6px 12px; font-family:'JetBrains Mono',monospace; font-size:0.8rem; color:#eef1f5; display:flex; align-items:center; gap:6px;}
+
+.dots-wrap{display:flex; flex-wrap:wrap; gap:6px; padding:6px 2px 14px; justify-content:center;}
+.dot{
+  width:26px; height:26px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'JetBrains Mono',monospace; font-size:0.68rem; font-weight:700;
+  border:none; cursor:pointer; color:#f4ead6;
+  background:linear-gradient(180deg,var(--kraft),var(--kraft-dark));
+  transition:transform .15s ease, filter .15s ease;
+}
+.dot.done{background:linear-gradient(180deg,var(--correct),#1f5744); color:#eafff6;}
+.dot.active{outline:3px solid var(--gold); outline-offset:2px; transform:scale(1.12);}
+.dot.locked{background:#2a3040; color:#5c6779; cursor:not-allowed;}
+.dot:hover:not(.locked){filter:brightness(1.15); transform:translateY(-2px);}
+.dot:focus-visible{outline:3px solid var(--focus); outline-offset:2px;}
+
+.teacher-link{text-align:center; margin-bottom:10px;}
+.teacher-link button{background:none; border:none; color:#7a8aa0; font-family:'JetBrains Mono',monospace; font-size:0.72rem; cursor:pointer; text-decoration:underline;}
+.teacher-box{display:none; max-width:340px; margin:0 auto 12px; background:#1e2534; border:1px solid #3a4356; border-radius:8px; padding:12px; text-align:center;}
+.teacher-box.show{display:block;}
+.teacher-box input{font-family:'JetBrains Mono',monospace; padding:7px 10px; border-radius:5px; border:1px solid #556; width:120px; text-align:center;}
+.teacher-banner{background:#3a2f16; border:1px solid var(--gold); color:#f4d99b; font-size:0.82rem; padding:8px 12px; border-radius:6px; margin-bottom:10px; text-align:center; font-weight:700;}
+
+.case-shell{position:relative;}
+.case-card{
+  position:relative;
+  background:repeating-linear-gradient(180deg, transparent 0 27px, var(--paper-shadow-line) 27px 28px), var(--paper);
+  border-radius:4px; padding:26px 24px 22px;
+  box-shadow:0 14px 30px rgba(0,0,0,0.35), 0 2px 0 rgba(0,0,0,0.15);
+  transform:rotate(-0.4deg);
+}
+.case-card::before{
+  content:""; position:absolute; top:0; right:0; width:0; height:0;
+  border-style:solid; border-width:0 34px 34px 0;
+  border-color:transparent var(--paper-fold) transparent transparent;
+  filter:drop-shadow(-2px 2px 3px rgba(0,0,0,0.2));
+}
+.case-card.shake{animation:shake .4s;}
+@keyframes shake{
+  10%,90%{transform:translateX(-2px) rotate(-0.4deg);}
+  20%,80%{transform:translateX(4px) rotate(-0.4deg);}
+  30%,50%,70%{transform:translateX(-7px) rotate(-0.4deg);}
+  40%,60%{transform:translateX(7px) rotate(-0.4deg);}
+}
+.case-head{display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px dashed rgba(58,90,120,0.35); padding-bottom:10px; margin-bottom:14px; gap:10px; flex-wrap:wrap;}
+.case-id{font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--ink-soft); font-size:0.78rem; letter-spacing:1px;}
+.case-title{font-family:'Special Elite',monospace; font-size:1.1rem; margin:2px 0 4px;}
+.icon-big{font-size:2rem; line-height:1;}
+
+.stage{background:rgba(255,255,255,0.45); border:1px solid rgba(58,90,120,0.18); border-left:4px solid var(--kraft-active); border-radius:6px; padding:14px; margin-bottom:12px;}
+.stage-label{font-weight:800; margin-bottom:8px; font-size:0.95rem;}
+.stage-hint{font-size:0.82rem; color:var(--ink-soft); margin-bottom:8px; font-style:italic;}
+.stage-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.stage input[type=number]{font-family:'JetBrains Mono',monospace; font-size:1.05rem; padding:8px 10px; border:1px solid #9aa9b8; border-radius:5px; width:150px; background:#fbfcfd;}
+.stage input:focus-visible{outline:3px solid var(--focus); outline-offset:1px;}
+.unit-lbl{font-family:'JetBrains Mono',monospace; color:var(--ink-soft); font-size:0.85rem;}
+.err-txt{color:var(--wrong); font-size:0.8rem; margin-top:6px; display:none;}
+.err-txt.show{display:block;}
+
+.step{
+  background:rgba(255,255,255,0.5); border:1px solid rgba(58,90,120,0.18);
+  border-left:4px solid var(--kraft-active); border-radius:6px; padding:12px 14px; margin-bottom:10px;
+}
+.step.correct{border-left-color:var(--correct); background:rgba(47,122,99,0.12);}
+.step.wrong{border-left-color:var(--wrong); background:rgba(193,84,59,0.12);}
+.step-style{display:inline-block; font-size:0.66rem; font-weight:800; letter-spacing:0.4px; color:#7a4e10; background:rgba(201,138,44,0.18); padding:2px 8px; border-radius:10px; margin-bottom:6px;}
+.step-q{font-weight:700; margin-bottom:8px; font-size:0.95rem;}
+.step-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.step-row input[type=number]{font-family:'JetBrains Mono',monospace; font-size:1rem; padding:7px 10px; border:1px solid #9aa9b8; border-radius:5px; width:130px; background:#fbfcfd;}
+.mark{font-size:1.1rem; width:22px; text-align:center;}
+.hint-btn{background:none; border:none; color:#7a4e10; font-size:0.8rem; cursor:pointer; text-decoration:underline; padding:0; margin-top:6px; font-family:'Nunito',sans-serif; font-weight:700;}
+.hint-text{display:none; font-size:0.85rem; color:var(--ink-soft); margin-top:6px; font-style:italic;}
+.hint-text.show{display:block;}
+
+.action-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; align-items:center;}
+.btn{font-family:'Nunito',sans-serif; font-weight:800; font-size:0.9rem; border:none; border-radius:6px; padding:10px 16px; cursor:pointer; transition:transform .12s ease, filter .12s ease;}
+.btn:hover{transform:translateY(-2px); filter:brightness(1.06);}
+.btn:focus-visible{outline:3px solid var(--focus); outline-offset:2px;}
+.btn-verify{background:linear-gradient(180deg,var(--kraft-active),#a86c1e); color:#241705; flex:1; min-width:160px; font-size:1rem; padding:12px;}
+.btn-ghost{background:rgba(58,90,120,0.14); color:var(--ink);}
+.btn-proceed{background:linear-gradient(180deg,var(--correct),#1f5744); color:#eafff6;}
+
+.locked-msg{text-align:center; padding:40px 20px; color:var(--ink-soft); font-size:1rem;}
+.locked-msg .big{font-size:2.4rem; display:block; margin-bottom:10px;}
+
+.stamp-wrap{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; overflow:hidden; border-radius:4px;}
+.stamp{font-family:'Special Elite',monospace; font-size:2rem; letter-spacing:2px; color:var(--stamp-red); border:6px double var(--stamp-red); padding:10px 26px; border-radius:8px; transform:rotate(-12deg) scale(1); opacity:0.92; animation:stampDown .55s cubic-bezier(.2,1.6,.4,1) both;}
+@keyframes stampDown{
+  0%{transform:translateY(-160px) rotate(-30deg) scale(3); opacity:0;}
+  60%{transform:translateY(6px) rotate(-10deg) scale(1.05); opacity:0.95;}
+  100%{transform:translateY(0) rotate(-12deg) scale(1); opacity:0.92;}
+}
+
+.toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px); background:#1a2130; color:#eef1f5; border:1px solid var(--gold); padding:12px 20px; border-radius:8px; font-weight:700; font-family:'Nunito',sans-serif; opacity:0; transition:all .3s ease; z-index:50; box-shadow:0 8px 20px rgba(0,0,0,0.4);}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+.modal-bg{position:fixed; inset:0; background:rgba(10,13,20,0.7); display:none; align-items:center; justify-content:center; z-index:60; padding:16px;}
+.modal-bg.show{display:flex;}
+.modal{background:var(--paper); border-radius:8px; padding:24px; max-width:420px; width:100%; text-align:center;}
+.modal h2{font-family:'Special Elite',monospace; margin-top:0;}
+.modal input{width:100%; padding:9px; font-family:'Nunito',sans-serif; border:1px solid #9aa9b8; border-radius:5px; margin:10px 0;}
+
+footer.credit{text-align:center; color:#5c6779; font-size:0.75rem; margin-top:24px; font-family:'JetBrains Mono',monospace;}
+
+@media (prefers-reduced-motion: reduce){ .stamp, .case-card.shake{animation:none !important;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="plaque">
+    <div>
+      <h1>📅 AAJ KA GANIT</h1>
+      <div class="sub">5 Related Sawaal, Roz Ek Naya Din — Din <span id="dayNumLabel">1</span>/60</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-chip">🔥 <span id="streakVal">0</span> din streak</div>
+      <div class="stat-chip">🏅 <span id="solvedVal">0</span>/<span id="totalDaysVal">60</span> solved</div>
+    </div>
+  </div>
+
+  <div id="teacherBanner"></div>
+
+  <div class="dots-wrap" id="dotsRow"></div>
+
+  <div class="case-shell">
+    <div class="case-card" id="caseCard"></div>
+  </div>
+
+  <div class="teacher-link">
+    <button onclick="toggleTeacherBox()">🔑 Teacher Access</button>
+  </div>
+  <div class="teacher-box" id="teacherBox">
+    <div style="font-size:0.85rem; margin-bottom:6px; color:#cdd6e3;">Special number daalein (sabhi 30 din preview karne ke liye):</div>
+    <input type="text" id="adminCodeInput" placeholder="Code">
+    <button class="btn btn-ghost" onclick="checkAdminCode()">Unlock</button>
+    <div id="adminErr" style="color:#e08; font-size:0.75rem; margin-top:4px;"></div>
+  </div>
+
+  <footer class="credit">SSVM Ghatsila · Aaj Ka Ganit · offline-ready</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-bg" id="certModal">
+  <div class="modal">
+    <h2>🏆 60 Din Ka Champion!</h2>
+    <p>Aapne saare 60 din ke live maths challenge poore kar liye hain. Apna naam likhein aur certificate download karein.</p>
+    <input type="text" id="certName" placeholder="Aapka naam" maxlength="40">
+    <div style="display:flex; gap:8px; justify-content:center; margin-top:10px;">
+      <button class="btn btn-verify" onclick="downloadCertificate()">Certificate Download Karein</button>
+      <button class="btn btn-ghost" onclick="closeCertModal()">Band Karein</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- config ---------- */
+const ADMIN_CODE = "7861"; // Teacher-only code — change this value to whatever you prefer
+
+/* ---------- helpers ---------- */
+function rand(min,max,dec=0){ const v=Math.random()*(max-min)+min; const f=Math.pow(10,dec); return Math.round(v*f)/f; }
+function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function lbl(cfg,p){ return typeof cfg.scaleLabel==='function' ? cfg.scaleLabel(p) : cfg.scaleLabel; }
+function mult(cfg,p){ return typeof cfg.scaleMultiplier==='function' ? cfg.scaleMultiplier(p) : cfg.scaleMultiplier; }
+
+/* ---------- audio ---------- */
+let actx=null;
+function ac(){ if(!actx){ actx=new (window.AudioContext||window.webkitAudioContext)(); } return actx; }
+function tone(freq,dur,type='sine',vol=0.18,delay=0){
+  const ctx=ac(); const t0=ctx.currentTime+delay;
+  const osc=ctx.createOscillator(); const g=ctx.createGain();
+  osc.type=type; osc.frequency.setValueAtTime(freq,t0);
+  g.gain.setValueAtTime(vol,t0); g.gain.exponentialRampToValueAtTime(0.001,t0+dur);
+  osc.connect(g); g.connect(ctx.destination); osc.start(t0); osc.stop(t0+dur+0.02);
+}
+function playStamp(){
+  const ctx=ac(); tone(70,0.28,'sine',0.35);
+  const buf=ctx.createBuffer(1, ctx.sampleRate*0.12, ctx.sampleRate);
+  const data=buf.getChannelData(0);
+  for(let i=0;i<data.length;i++){ data[i]=(Math.random()*2-1)*(1-i/data.length); }
+  const src=ctx.createBufferSource(); src.buffer=buf;
+  const g=ctx.createGain(); g.gain.setValueAtTime(0.12, ctx.currentTime);
+  src.connect(g); g.connect(ctx.destination); src.start();
+}
+function playCorrect(){ tone(660,0.12,'triangle',0.2); tone(880,0.14,'triangle',0.2,0.1); }
+function playWrong(){ tone(160,0.25,'sawtooth',0.18); }
+function playFanfare(){ tone(523,0.16,'triangle',0.22,0); tone(659,0.16,'triangle',0.22,0.15); tone(784,0.3,'triangle',0.24,0.3); playStamp(); }
+
+/* ---------- generic day builder: 5 related, differently-styled questions ---------- */
+function stdDay(cfg){
+  return {
+    day:cfg.day, icon:cfg.icon, title:cfg.title,
+    liveLabel:cfg.liveLabel, liveHint:cfg.liveHint, unit:cfg.unit, sample:cfg.sample,
+    gen(){
+      const extra = cfg.qtyGen();
+      const pct = randInt(5,25);
+      const pctType = Math.random()<0.5 ? 'discount':'increase';
+      const budgetFactor = rand(0.6,1.4,2);
+      return Object.assign({}, extra, {pct, pctType, budgetFactor});
+    },
+    calc(live,p){
+      const divisor = cfg.qtyDivisor||1;
+      const ans1 = +(live*p.qty/divisor).toFixed(2);
+      const m = mult(cfg,p);
+      const ans2 = +(ans1*m).toFixed(2);
+      const ans3 = p.pctType==='discount' ? +(ans1*(1-p.pct/100)).toFixed(2) : +(ans1*(1+p.pct/100)).toFixed(2);
+      const budget = +(ans2*p.budgetFactor).toFixed(2);
+      const ans4 = ans2<=budget ? 1:0;
+      const ans5 = +Math.max(0,budget-ans2).toFixed(2);
+      return {ans1,ans2,ans3,budget,ans4,ans5,mult:m};
+    },
+    steps:[
+      {style:'BASIC HISAAB', q:(live,p,r)=>`${cfg.scenario(p)} Agar rate <b>₹${live}</b> ${cfg.unitPhrase} hai, to iske liye kitna paisa lagega?`, unit:'₹', ans:(live,p,r)=>r.ans1, hint:()=>'Rate × Quantity (seedha guna karein)'},
+      {style:'SCALE KARKE', q:(live,p,r)=>`Agar isi cheez ki zarurat <b>${lbl(cfg,p)}</b> ke liye ho (yani ${r.mult}× zyada), to total kharch kitna hoga?`, unit:'₹', ans:(live,p,r)=>r.ans2, hint:(p,r)=>'Step 1 ka jawab × '+r.mult},
+      {style:'PERCENTAGE', q:(live,p,r)=>`Agar isme ${p.pct}% ka ${p.pctType==='discount'?'discount mil jaaye':'extra kharch (jaise tax) lag jaaye'}, to Step 1 wale kharch (₹${r.ans1}) ka naya total kitna hoga?`, unit:'₹', ans:(live,p,r)=>r.ans3, hint:(p)=>p.pctType==='discount' ? 'Kharch − (kharch × %)' : 'Kharch + (kharch × %)'},
+      {style:'FAISLA (YES/NO)', q:(live,p,r)=>`Agar budget <b>₹${r.budget}</b> hai, kya ${lbl(cfg,p)} ka poora kharch (Step 2 wala, ₹${r.ans2}) is budget mein ho sakta hai? (1 = Haan, 0 = Nahi)`, unit:'', ans:(live,p,r)=>r.ans4, hint:()=>'Budget ko Step 2 ke total se compare karein'},
+      {style:'ANTAR (DIFFERENCE)', q:(live,p,r)=>`Budget (₹${r.budget}) aur Step 2 ke kharch (₹${r.ans2}) ke beech kitna antar hai? (agar kharch zyada hai to 0 likhein)`, unit:'₹', ans:(live,p,r)=>r.ans5, hint:()=>'Budget − Step 2 ka kharch (negative ho to 0)'}
+    ]
+  };
+}
+
+/* ---------- 30 day configs ---------- */
+const dayBank = [
+stdDay({day:1, icon:"🪙", title:"Sone Ka Hisaab", liveLabel:"Aaj sone (Gold) ka rate 10 gram ka kya hai?", liveHint:"Google/newspaper mein 'aaj gold rate' dekh kar pata karein.", unit:"₹ / 10 gram", unitPhrase:"per 10 gram", sample:72000,
+  qtyGen(){ return {qty:randInt(5,60)}; }, qtyDivisor:10,
+  scenario:p=>`Meera ko ek shaadi ke liye <b>${p.qty} gram</b> sona khareedna hai.`,
+  scaleMultiplier:2, scaleLabel:"double gram (2×)"}),
+
+stdDay({day:2, icon:"⛽", title:"Petrol Ka Kharch", liveLabel:"Aaj petrol ka rate per litre kya hai?", liveHint:"Apne najdiki petrol pump ke board par ya Google par dekhein.", unit:"₹ / litre", unitPhrase:"per litre", sample:100,
+  qtyGen(){ return {qty:randInt(5,40)}; },
+  scenario:p=>`Suresh ne apni bike mein <b>${p.qty} litre</b> petrol daalwaya.`,
+  scaleMultiplier:4, scaleLabel:"poore mahine (4 baar itna hi)"}),
+
+stdDay({day:3, icon:"🛢️", title:"Diesel Ka Kharch", liveLabel:"Aaj diesel ka rate per litre kya hai?", liveHint:"Petrol pump ya news se pata karein.", unit:"₹ / litre", unitPhrase:"per litre", sample:92,
+  qtyGen(){ return {qty:randInt(10,60)}; },
+  scenario:p=>`Ek generator chalane ke liye <b>${p.qty} litre</b> diesel chahiye.`,
+  scaleMultiplier:2, scaleLabel:"double din (2×)"}),
+
+stdDay({day:4, icon:"🔥", title:"LPG Cylinder Ka Hisaab", liveLabel:"Aapke ghar mein LPG gas cylinder ka price kya hai?", liveHint:"Apni gas agency ki receipt ya app mein dekhein.", unit:"₹ / cylinder", unitPhrase:"per cylinder", sample:850,
+  qtyGen(){ return {qty:1, cylinders:randInt(6,12)}; },
+  scenario:p=>`Ek gas cylinder khareedna hai.`,
+  scaleMultiplier:(p)=>p.cylinders, scaleLabel:(p)=>`poore saal (${p.cylinders} cylinder)`}),
+
+stdDay({day:5, icon:"🥛", title:"Doodh Ka Kharch", liveLabel:"Aaj doodh (milk) ka rate per litre kya hai?", liveHint:"Doodh wale bhaiya se ya packet par dekhein.", unit:"₹ / litre", unitPhrase:"per litre", sample:56,
+  qtyGen(){ return {qty:rand(1,4,1)}; },
+  scenario:p=>`Ek parivaar aaj <b>${p.qty} litre</b> doodh khareedta hai.`,
+  scaleMultiplier:30, scaleLabel:"ek mahine (30 din)"}),
+
+stdDay({day:6, icon:"🧅", title:"Pyaz Ka Bill", liveLabel:"Aaj pyaz (onion) ka rate per kg kya hai?", liveHint:"Sabzi mandi ya bazaar mein dekhein.", unit:"₹ / kg", unitPhrase:"per kg", sample:30,
+  qtyGen(){ return {qty:randInt(2,10)}; },
+  scenario:p=>`Ek dukaandar ko <b>${p.qty} kg</b> pyaz khareedne hain.`,
+  scaleMultiplier:2, scaleLabel:"double order (2×)"}),
+
+stdDay({day:7, icon:"⚪", title:"Chandi Ka Hisaab", liveLabel:"Aaj chandi (silver) ka rate 10 gram ka kya hai?", liveHint:"Sunar (jeweller) se ya Google par pata karein.", unit:"₹ / 10 gram", unitPhrase:"per 10 gram", sample:950,
+  qtyGen(){ return {qty:randInt(20,200)}; }, qtyDivisor:10,
+  scenario:p=>`Ek dukaandar ko <b>${p.qty} gram</b> chandi khareedni hai.`,
+  scaleMultiplier:2, scaleLabel:"double quantity (2×)"}),
+
+stdDay({day:8, icon:"💵", title:"Dollar Se Rupaye", liveLabel:"Aaj 1 US Dollar ($) ka INR mein rate kya hai?", liveHint:"Google mein 'USD to INR' search karein.", unit:"₹ per $1", unitPhrase:"per $1", sample:86,
+  qtyGen(){ return {qty:randInt(10,500)}; },
+  scenario:p=>`Ek NRI apne parivaar ko <b>$${p.qty}</b> bhejna chahta hai.`,
+  scaleMultiplier:2, scaleLabel:"double amount (2×)"}),
+
+stdDay({day:9, icon:"🥚", title:"Ande Ka Hisaab", liveLabel:"Aaj ande (egg) ke ek dozen (12 ande) ka price kya hai?", liveHint:"Dukaan par ya online dekh kar pata karein.", unit:"₹ / dozen", unitPhrase:"per dozen", sample:84,
+  qtyGen(){ return {qty:randInt(15,80)}; }, qtyDivisor:12,
+  scenario:p=>`Ek hostel mess ko <b>${p.qty} ande</b> chahiye.`,
+  scaleMultiplier:4, scaleLabel:"mahine bhar (4 hafte)"}),
+
+stdDay({day:10, icon:"🧂", title:"Cheeni Ka Kharch", liveLabel:"Aaj cheeni (sugar) ka rate per kg kya hai?", liveHint:"Kirana dukaan mein dekhein.", unit:"₹ / kg", unitPhrase:"per kg", sample:45,
+  qtyGen(){ return {qty:rand(2,8,1)}; },
+  scenario:p=>`Ek ghar mein mahine bhar mein <b>${p.qty} kg</b> cheeni lagti hai.`,
+  scaleMultiplier:12, scaleLabel:"poore saal (12 mahine)"}),
+
+stdDay({day:11, icon:"🛢️", title:"Khana Pakane Ke Tel Ka Kharch", liveLabel:"Aaj khana pakane ka tel (cooking oil) ka rate per litre kya hai?", liveHint:"Kirana dukaan ya packet par dekhein.", unit:"₹ / litre", unitPhrase:"per litre", sample:140,
+  qtyGen(){ return {qty:rand(2,6,1)}; },
+  scenario:p=>`Ek ghar mein mahine bhar mein <b>${p.qty} litre</b> khana pakane ka tel lagta hai.`,
+  scaleMultiplier:12, scaleLabel:"poore saal (12 mahine)"}),
+
+stdDay({day:12, icon:"🍚", title:"Chawal Ka Bill", liveLabel:"Aaj chawal (rice) ka rate per kg kya hai?", liveHint:"Kirana dukaan mein dekhein.", unit:"₹ / kg", unitPhrase:"per kg", sample:45,
+  qtyGen(){ return {qty:randInt(5,25)}; },
+  scenario:p=>`Ek parivaar ko <b>${p.qty} kg</b> chawal khareedne hain.`,
+  scaleMultiplier:2, scaleLabel:"double quantity (2×)"}),
+
+stdDay({day:13, icon:"🌾", title:"Atta Ka Bill", liveLabel:"Aaj atta (wheat flour) ka rate per kg kya hai?", liveHint:"Kirana dukaan mein dekhein.", unit:"₹ / kg", unitPhrase:"per kg", sample:38,
+  qtyGen(){ return {qty:randInt(5,25)}; },
+  scenario:p=>`Ek parivaar ko <b>${p.qty} kg</b> atta khareedna hai.`,
+  scaleMultiplier:2, scaleLabel:"double quantity (2×)"}),
+
+stdDay({day:14, icon:"🍃", title:"Chai Patti Ka Hisaab", liveLabel:"Aaj chai patti (tea leaves) ka rate per kg kya hai?", liveHint:"Kirana dukaan mein dekhein.", unit:"₹ / kg", unitPhrase:"per kg", sample:400,
+  qtyGen(){ return {qty:randInt(100,1000)}; }, qtyDivisor:1000,
+  scenario:p=>`Ek dukaandar ko <b>${p.qty} gram</b> chai patti khareedni hai.`,
+  scaleMultiplier:2, scaleLabel:"double quantity (2×)"}),
+
+stdDay({day:15, icon:"🛺", title:"Auto Ka Kiraya", liveLabel:"Aapke ilaake mein auto/rickshaw ka rate per km kitna hai?", liveHint:"Auto driver se puchein ya apni jagah ka average rate yaad karein.", unit:"₹ / km", unitPhrase:"per km", sample:12,
+  qtyGen(){ return {qty:rand(2,20,1)}; },
+  scenario:p=>`Ek vidyarthi ko school se ghar tak <b>${p.qty} km</b> auto se jaana hai.`,
+  scaleMultiplier:2, scaleLabel:"round trip (aana-jaana, 2×)"}),
+
+stdDay({day:16, icon:"🚌", title:"Bus Ke Safar Ka Kharch", liveLabel:"Aapke sheher mein ek bus ticket ka price kya hai (ek trip ka)?", liveHint:"Bus conductor se ya ticket par dekhein.", unit:"₹ / trip", unitPhrase:"per trip", sample:20,
+  qtyGen(){ return {qty:randInt(20,60)}; },
+  scenario:p=>`Ek vidyarthi mahine mein <b>${p.qty} baar</b> bus se safar karta hai.`,
+  scaleMultiplier:12, scaleLabel:"poore saal (12 mahine)"}),
+
+stdDay({day:17, icon:"📱", title:"Mobile Recharge Ka Kharch", liveLabel:"Aapke mobile ka monthly recharge plan kitne ka hai?", liveHint:"Apna recharge plan yaad karein ya app mein dekhein.", unit:"₹ / month", unitPhrase:"per month", sample:199,
+  qtyGen(){ return {qty:1}; },
+  scenario:p=>`Ek vidyarthi har mahine mobile recharge karwata hai.`,
+  scaleMultiplier:12, scaleLabel:"poore saal (12 mahine)"}),
+
+stdDay({day:18, icon:"🎬", title:"Movie Dekhne Ka Kharch", liveLabel:"Aapke sheher mein ek movie ticket ka price kya hai?", liveHint:"Cinema hall ki website ya counter par dekhein.", unit:"₹ / ticket", unitPhrase:"per ticket", sample:150,
+  qtyGen(){ return {qty:randInt(2,8)}; },
+  scenario:p=>`<b>${p.qty} dost</b> milkar movie dekhne jaate hain.`,
+  scaleMultiplier:2, scaleLabel:"dusri movie bhi (double outing)"}),
+
+stdDay({day:19, icon:"📰", title:"Akhbaar Ka Kharch", liveLabel:"Ek newspaper copy ka price kya hai?", liveHint:"Aaj ke newspaper par price dekhein.", unit:"₹ / copy", unitPhrase:"per copy", sample:6,
+  qtyGen(){ return {qty:1}; },
+  scenario:p=>`Ek ghar roz newspaper mangwata hai.`,
+  scaleMultiplier:30, scaleLabel:"ek mahine (30 din)"}),
+
+stdDay({day:20, icon:"💇", title:"Haircut Ka Kharch", liveLabel:"Ek haircut (salon) ka price kya hai?", liveHint:"Apne najdiki salon mein pata karein.", unit:"₹ / haircut", unitPhrase:"per haircut", sample:80,
+  qtyGen(){ return {qty:randInt(6,12)}; },
+  scenario:p=>`Ek vyakti saal mein <b>${p.qty} baar</b> haircut karwata hai.`,
+  scaleMultiplier:2, scaleLabel:"2 saal"}),
+
+stdDay({day:21, icon:"📓", title:"Class Ke Liye Notebook", liveLabel:"Ek notebook (copy) ka price kya hai?", liveHint:"School ki dukaan mein dekhein.", unit:"₹ / notebook", unitPhrase:"per notebook", sample:35,
+  qtyGen(){ return {qty:randInt(20,50)}; },
+  scenario:p=>`Class ke sabhi <b>${p.qty} students</b> ke liye ek-ek notebook khareedni hai.`,
+  scaleMultiplier:2, scaleLabel:"2 notebook per student"}),
+
+stdDay({day:22, icon:"📝", title:"Exam Form Ka Kharch", liveLabel:"Ek student ka exam form fee kitna hai?", liveHint:"School office mein pata karein.", unit:"₹ / student", unitPhrase:"per student", sample:250,
+  qtyGen(){ return {qty:randInt(20,60)}; },
+  scenario:p=>`School mein <b>${p.qty} students</b> exam form bhar rahe hain.`,
+  scaleMultiplier:2, scaleLabel:"agle saal double students"}),
+
+stdDay({day:23, icon:"💡", title:"Bijli Ka Kharch", liveLabel:"Aapke bijli bill mein per unit rate kitna hai?", liveHint:"Purane bijli bill mein per unit rate dekhein.", unit:"₹ / unit", unitPhrase:"per unit", sample:6,
+  qtyGen(){ return {qty:randInt(80,400)}; },
+  scenario:p=>`Is mahine ghar mein <b>${p.qty} unit</b> bijli istemal hui.`,
+  scaleMultiplier:2, scaleLabel:"2 mahine"}),
+
+stdDay({day:24, icon:"🥤", title:"Cold Drink Ka Kharch", liveLabel:"Ek cold drink bottle ka price kya hai?", liveHint:"Dukaan mein dekhein.", unit:"₹ / bottle", unitPhrase:"per bottle", sample:40,
+  qtyGen(){ return {qty:randInt(10,60)}; },
+  scenario:p=>`School ke ek event ke liye <b>${p.qty} bottle</b> cold drink chahiye.`,
+  scaleMultiplier:2, scaleLabel:"doosre event ke liye bhi (double)"}),
+
+stdDay({day:25, icon:"🍞", title:"Bread Ka Kharch", liveLabel:"Ek bread (double roti) ka price kya hai?", liveHint:"Kirana dukaan mein dekhein.", unit:"₹ / bread", unitPhrase:"per bread", sample:45,
+  qtyGen(){ return {qty:1}; },
+  scenario:p=>`Ek ghar mein roz ek bread lagta hai.`,
+  scaleMultiplier:30, scaleLabel:"ek mahine (30 din)"}),
+
+stdDay({day:26, icon:"🍅", title:"Tamatar Ka Kharch", liveLabel:"Aaj tamatar (tomato) ka rate per kg kya hai?", liveHint:"Sabzi mandi mein dekhein.", unit:"₹ / kg", unitPhrase:"per kg", sample:40,
+  qtyGen(){ return {qty:rand(1,5,1)}; },
+  scenario:p=>`Ek parivaar har hafte <b>${p.qty} kg</b> tamatar khareedta hai.`,
+  scaleMultiplier:4, scaleLabel:"ek mahine (4 hafte)"}),
+
+stdDay({day:27, icon:"📶", title:"WiFi Ka Kharch", liveLabel:"Aapke ghar ka WiFi/internet ka monthly plan kitne ka hai?", liveHint:"Broadband bill mein dekhein.", unit:"₹ / month", unitPhrase:"per month", sample:599,
+  qtyGen(){ return {qty:1}; },
+  scenario:p=>`Ek ghar mein WiFi ka monthly plan chal raha hai.`,
+  scaleMultiplier:12, scaleLabel:"poore saal (12 mahine)"}),
+
+stdDay({day:28, icon:"🍿", title:"Cinema Popcorn Ka Kharch", liveLabel:"Cinema mein ek popcorn combo ka price kya hai?", liveHint:"Cinema counter par dekhein.", unit:"₹ / combo", unitPhrase:"per combo", sample:250,
+  qtyGen(){ return {qty:randInt(2,6)}; },
+  scenario:p=>`Cinema dekhne gaye <b>${p.qty} logon</b> ne apna-apna popcorn combo liya.`,
+  scaleMultiplier:2, scaleLabel:"doosri baar bhi (double outing)"}),
+
+stdDay({day:29, icon:"📞", title:"SIM Recharge Ka Kharch", liveLabel:"Aapke sim card ka recharge price kitna hai?", liveHint:"Apna current recharge plan yaad karein.", unit:"₹ / recharge", unitPhrase:"per recharge", sample:239,
+  qtyGen(){ return {qty:1, validityDays:randInt(28,84)}; },
+  scenario:p=>`Ek recharge <b>${p.validityDays} din</b> chalta hai.`,
+  scaleMultiplier:(p)=>Math.ceil(365/p.validityDays), scaleLabel:(p)=>`poore saal (365 din, is validity ke hisaab se)`}),
+
+stdDay({day:30, icon:"🎓", title:"Tuition/Gym Ka Saal Bhar Ka Kharch", liveLabel:"Tuition ya gym ka monthly fee kitna hai?", liveHint:"Apni tuition/gym ki fee yaad karein.", unit:"₹ / month", unitPhrase:"per month", sample:500,
+  qtyGen(){ return {qty:1}; },
+  scenario:p=>`Ek vidyarthi tuition/gym mein monthly fee deta hai.`,
+  scaleMultiplier:12, scaleLabel:"poore saal (12 mahine)"}),
+
+stdDay({day:31, icon:"🥔", title:"Aloo Ka Bill", liveLabel:"Aaj aloo (potato) ka rate per kg kya hai?", liveHint:"Sabzi mandi mein dekhein.", unit:"₹ / kg", unitPhrase:"per kg", sample:25,
+  qtyGen(){ return {qty:randInt(2,10)}; },
+  scenario:p=>`Ek dukaandar ko <b>${p.qty} kg</b> aloo khareedne hain.`,
+  scaleMultiplier:2, scaleLabel:"double order (2×)"}),
+
+stdDay({day:32, icon:"🍗", title:"Chicken Ka Kharch", liveLabel:"Aaj chicken (murga) ka rate per kg kya hai?", liveHint:"Meat shop mein dekhein.", unit:"₹ / kg", unitPhrase:"per kg", sample:220,
+  qtyGen(){ return {qty:rand(1,5,1)}; },
+  scenario:p=>`Ek ghar ko ravivar ke khane ke liye <b>${p.qty} kg</b> chicken chahiye.`,
+  scaleMultiplier:4, scaleLabel:"mahine bhar (4 Ravivar)"}),
+
+stdDay({day:33, icon:"🧀", title:"Paneer Ka Kharch", liveLabel:"Aaj paneer ka rate per kg kya hai?", liveHint:"Dairy ya kirana dukaan mein dekhein.", unit:"₹ / kg", unitPhrase:"per kg", sample:320,
+  qtyGen(){ return {qty:rand(0.5,3,1)}; },
+  scenario:p=>`Ek dawat ke liye <b>${p.qty} kg</b> paneer chahiye.`,
+  scaleMultiplier:2, scaleLabel:"double dawat (2×)"}),
+
+stdDay({day:34, icon:"☕", title:"Chai Ka Mahine Ka Kharch", liveLabel:"Ek chai stall par ek cup chai ka price kya hai?", liveHint:"Apni najdiki chai dukaan mein dekhein.", unit:"₹ / cup", unitPhrase:"per cup", sample:10,
+  qtyGen(){ return {qty:randInt(1,4)}; },
+  scenario:p=>`Ek vyakti roz <b>${p.qty} cup</b> chai peeta hai.`,
+  scaleMultiplier:30, scaleLabel:"ek mahine (30 din)"}),
+
+stdDay({day:35, icon:"🚗", title:"Vahan Insurance Ka Kharch", liveLabel:"Aapki bike/car insurance ka yearly premium kitna hai?", liveHint:"Insurance policy paper mein dekhein.", unit:"₹ / year", unitPhrase:"per year", sample:3500,
+  qtyGen(){ return {qty:1}; },
+  scenario:p=>`Ek vahan ka saalana (yearly) insurance premium bharna hai.`,
+  scaleMultiplier:3, scaleLabel:"3 saal (renewal cycle)"}),
+
+stdDay({day:36, icon:"📲", title:"Mobile EMI Ka Kharch", liveLabel:"Naye mobile phone ki EMI per month kitni hai?", liveHint:"Apna EMI plan yaad karein.", unit:"₹ / month", unitPhrase:"per month", sample:1500,
+  qtyGen(){ return {qty:1, months:randInt(6,12)}; },
+  scenario:p=>`Ek naya mobile phone EMI par khareeda gaya hai.`,
+  scaleMultiplier:(p)=>p.months, scaleLabel:(p)=>`poori EMI (${p.months} mahine)`}),
+
+stdDay({day:37, icon:"🚐", title:"School Van Ka Kharch", liveLabel:"School van/bus ka monthly fee kitna hai?", liveHint:"Van/bus driver ya school office se pata karein.", unit:"₹ / month", unitPhrase:"per month", sample:800,
+  qtyGen(){ return {qty:1}; },
+  scenario:p=>`Ek vidyarthi school van se roz aata-jaata hai.`,
+  scaleMultiplier:12, scaleLabel:"poore saal (12 mahine)"}),
+
+stdDay({day:38, icon:"🚲", title:"Cycle Service Ka Kharch", liveLabel:"Cycle ki ek service (repair) ka kharch kitna hai?", liveHint:"Cycle mechanic se pata karein.", unit:"₹ / service", unitPhrase:"per service", sample:150,
+  qtyGen(){ return {qty:1, visits:randInt(2,4)}; },
+  scenario:p=>`Cycle ki ek service karwani hai.`,
+  scaleMultiplier:(p)=>p.visits, scaleLabel:(p)=>`poore saal (${p.visits} service)`}),
+
+stdDay({day:39, icon:"☂️", title:"Umbrella Ka Kharch", liveLabel:"Ek umbrella (chhata) ka price kya hai?", liveHint:"Dukaan mein dekhein.", unit:"₹ / umbrella", unitPhrase:"per umbrella", sample:250,
+  qtyGen(){ return {qty:randInt(2,5)}; },
+  scenario:p=>`Ek parivaar ke sabhi <b>${p.qty} logon</b> ke liye ek-ek umbrella khareedni hai.`,
+  scaleMultiplier:2, scaleLabel:"agle saal phir se (double)"}),
+
+stdDay({day:40, icon:"👞", title:"School Shoes Ka Kharch", liveLabel:"Ek school shoes (juta) ka price kya hai?", liveHint:"Dukaan mein dekhein.", unit:"₹ / pair", unitPhrase:"per pair", sample:450,
+  qtyGen(){ return {qty:randInt(20,50)}; },
+  scenario:p=>`Class ke sabhi <b>${p.qty} students</b> ko naye shoes chahiye.`,
+  scaleMultiplier:2, scaleLabel:"do jode per student (2×)"}),
+
+stdDay({day:41, icon:"👕", title:"School Uniform Ka Kharch", liveLabel:"Ek school uniform set ka price kya hai?", liveHint:"School dukaan mein dekhein.", unit:"₹ / set", unitPhrase:"per set", sample:600,
+  qtyGen(){ return {qty:randInt(20,50)}; },
+  scenario:p=>`Class ke sabhi <b>${p.qty} students</b> ke liye uniform set khareedna hai.`,
+  scaleMultiplier:2, scaleLabel:"2 set per student (summer+winter)"}),
+
+stdDay({day:42, icon:"💧", title:"Paani Ke Can Ka Kharch", liveLabel:"Ek RO/water can (jar) ka price kya hai?", liveHint:"Apni water supplier se pata karein.", unit:"₹ / can", unitPhrase:"per can", sample:40,
+  qtyGen(){ return {qty:randInt(1,3)}; },
+  scenario:p=>`Ek ghar har hafte <b>${p.qty} can</b> paani mangwata hai.`,
+  scaleMultiplier:4, scaleLabel:"ek mahine (4 hafte)"}),
+
+stdDay({day:43, icon:"⛽", title:"CNG Ka Kharch", liveLabel:"Aaj CNG ka rate per kg kya hai?", liveHint:"CNG pump mein dekhein.", unit:"₹ / kg", unitPhrase:"per kg", sample:75,
+  qtyGen(){ return {qty:randInt(5,25)}; },
+  scenario:p=>`Ek auto driver ko <b>${p.qty} kg</b> CNG bharwani hai.`,
+  scaleMultiplier:6, scaleLabel:"poore hafte (6 din)"}),
+
+stdDay({day:44, icon:"🚆", title:"Train Ke Safar Ka Kharch", liveLabel:"Ek train ticket (ek trip) ka price kya hai?", liveHint:"Railway station ya app mein dekhein.", unit:"₹ / trip", unitPhrase:"per trip", sample:30,
+  qtyGen(){ return {qty:randInt(15,40)}; },
+  scenario:p=>`Ek vyakti mahine mein <b>${p.qty} baar</b> train se safar karta hai.`,
+  scaleMultiplier:12, scaleLabel:"poore saal (12 mahine)"}),
+
+stdDay({day:45, icon:"🅿️", title:"Parking Ka Kharch", liveLabel:"Ek din ki parking fee kitni hai?", liveHint:"Parking board par dekhein.", unit:"₹ / day", unitPhrase:"per day", sample:20,
+  qtyGen(){ return {qty:1}; },
+  scenario:p=>`Ek vyakti roz gadi park karta hai.`,
+  scaleMultiplier:30, scaleLabel:"ek mahine (30 din)"}),
+
+stdDay({day:46, icon:"📦", title:"Courier Ka Kharch", liveLabel:"Ek courier/parcel bhejne ka price kya hai?", liveHint:"Courier office mein dekhein.", unit:"₹ / parcel", unitPhrase:"per parcel", sample:60,
+  qtyGen(){ return {qty:randInt(2,10)}; },
+  scenario:p=>`Ek dukaandar saal mein <b>${p.qty} parcel</b> bhejta hai.`,
+  scaleMultiplier:2, scaleLabel:"agle saal double parcels"}),
+
+stdDay({day:47, icon:"📄", title:"Photocopy Ka Kharch", liveLabel:"Ek page ki photocopy/Xerox ka price kya hai?", liveHint:"Xerox dukaan mein dekhein.", unit:"₹ / page", unitPhrase:"per page", sample:2,
+  qtyGen(){ return {qty:randInt(20,100)}; },
+  scenario:p=>`Exam ke liye <b>${p.qty} page</b> ki photocopy karwani hai.`,
+  scaleMultiplier:2, scaleLabel:"double copies (2×)"}),
+
+stdDay({day:48, icon:"🫑", title:"Bhindi Ka Bill", liveLabel:"Aaj bhindi (okra) ka rate per kg kya hai?", liveHint:"Sabzi mandi mein dekhein.", unit:"₹ / kg", unitPhrase:"per kg", sample:35,
+  qtyGen(){ return {qty:randInt(1,6)}; },
+  scenario:p=>`Ek ghar ko <b>${p.qty} kg</b> bhindi khareedni hai.`,
+  scaleMultiplier:4, scaleLabel:"ek mahine (4 baar)"}),
+
+stdDay({day:49, icon:"🧴", title:"Shampoo Ka Kharch", liveLabel:"Ek shampoo bottle ka price kya hai?", liveHint:"Dukaan mein dekhein.", unit:"₹ / bottle", unitPhrase:"per bottle", sample:150,
+  qtyGen(){ return {qty:1}; },
+  scenario:p=>`Ek ghar mahine mein ek shampoo bottle istemal karta hai.`,
+  scaleMultiplier:12, scaleLabel:"poore saal (12 mahine)"}),
+
+stdDay({day:50, icon:"🪥", title:"Toothpaste Ka Kharch", liveLabel:"Ek toothpaste tube ka price kya hai?", liveHint:"Dukaan mein dekhein.", unit:"₹ / tube", unitPhrase:"per tube", sample:90,
+  qtyGen(){ return {qty:1}; },
+  scenario:p=>`Ek ghar mahine mein ek toothpaste tube istemal karta hai.`,
+  scaleMultiplier:12, scaleLabel:"poore saal (12 mahine)"}),
+
+stdDay({day:51, icon:"👶", title:"Diaper Ka Kharch", liveLabel:"Ek diaper packet ka price kya hai?", liveHint:"Medical/dukaan mein dekhein.", unit:"₹ / packet", unitPhrase:"per packet", sample:350,
+  qtyGen(){ return {qty:randInt(2,4)}; },
+  scenario:p=>`Ek ghar mein baby ke liye mahine mein <b>${p.qty} packet</b> diaper lagte hain.`,
+  scaleMultiplier:12, scaleLabel:"poore saal (12 mahine)"}),
+
+stdDay({day:52, icon:"💻", title:"Laptop EMI Ka Kharch", liveLabel:"Naye laptop ki EMI per month kitni hai?", liveHint:"Apna EMI plan yaad karein.", unit:"₹ / month", unitPhrase:"per month", sample:2500,
+  qtyGen(){ return {qty:1, months:randInt(10,18)}; },
+  scenario:p=>`Ek naya laptop EMI par khareeda gaya hai.`,
+  scaleMultiplier:(p)=>p.months, scaleLabel:(p)=>`poori EMI (${p.months} mahine)`}),
+
+stdDay({day:53, icon:"🪑", title:"Classroom Kursi Ka Kharch", liveLabel:"Ek school chair (kursi) ka price kya hai?", liveHint:"Furniture dukaan mein dekhein.", unit:"₹ / chair", unitPhrase:"per chair", sample:800,
+  qtyGen(){ return {qty:randInt(20,50)}; },
+  scenario:p=>`Class ke liye <b>${p.qty} kursi</b> khareedni hain.`,
+  scaleMultiplier:2, scaleLabel:"do class ke liye (2×)"}),
+
+stdDay({day:54, icon:"🌀", title:"Classroom Fan Ka Kharch", liveLabel:"Ek ceiling fan ka price kya hai?", liveHint:"Electric dukaan mein dekhein.", unit:"₹ / fan", unitPhrase:"per fan", sample:1400,
+  qtyGen(){ return {qty:randInt(2,6)}; },
+  scenario:p=>`School ke ek room mein <b>${p.qty} fan</b> lagane hain.`,
+  scaleMultiplier:2, scaleLabel:"do room ke liye (2×)"}),
+
+stdDay({day:55, icon:"📚", title:"Textbook Ka Kharch", liveLabel:"Ek textbook (kitaab) ka price kya hai?", liveHint:"Book dukaan mein dekhein.", unit:"₹ / book", unitPhrase:"per book", sample:120,
+  qtyGen(){ return {qty:randInt(20,50)}; },
+  scenario:p=>`Class ke sabhi <b>${p.qty} students</b> ke liye ek-ek kitaab khareedni hai.`,
+  scaleMultiplier:2, scaleLabel:"2 subjects ke liye (2×)"}),
+
+stdDay({day:56, icon:"🏫", title:"Tuition Admission Ka Kharch", liveLabel:"Tuition center ki ek-baar ki admission fee kitni hai?", liveHint:"Tuition center se pata karein.", unit:"₹ / student", unitPhrase:"per student", sample:500,
+  qtyGen(){ return {qty:randInt(1,4)}; },
+  scenario:p=>`Ek parivaar ke <b>${p.qty} bacchon</b> ka tuition mein admission karana hai.`,
+  scaleMultiplier:2, scaleLabel:"agle saal phir se (double)"}),
+
+stdDay({day:57, icon:"🎪", title:"Wedding Hall Ka Kharch", liveLabel:"Ek wedding hall ki ek din ki booking price kya hai?", liveHint:"Hall manager se pata karein.", unit:"₹ / day", unitPhrase:"per day", sample:15000,
+  qtyGen(){ return {qty:randInt(1,3)}; },
+  scenario:p=>`Ek shaadi ke liye hall <b>${p.qty} din</b> ke liye book karna hai.`,
+  scaleMultiplier:2, scaleLabel:"double booking (2×)"}),
+
+stdDay({day:58, icon:"📡", title:"Extra Data Pack Ka Kharch", liveLabel:"Extra mobile data pack ka price kya hai?", liveHint:"Apne mobile app mein dekhein.", unit:"₹ / pack", unitPhrase:"per pack", sample:50,
+  qtyGen(){ return {qty:randInt(2,6)}; },
+  scenario:p=>`Exam preparation ke dauran mahine mein <b>${p.qty} extra data pack</b> chahiye.`,
+  scaleMultiplier:3, scaleLabel:"3 mahine (exam season)"}),
+
+stdDay({day:59, icon:"🛒", title:"Thela (Cart) Rent Ka Kharch", liveLabel:"Ek thela (cart) ka roz ka rent kitna hai?", liveHint:"Sabzi vendor se pata karein.", unit:"₹ / day", unitPhrase:"per day", sample:50,
+  qtyGen(){ return {qty:1}; },
+  scenario:p=>`Ek sabzi vendor roz ek thela rent par leta hai.`,
+  scaleMultiplier:6, scaleLabel:"poore hafte (6 din)"}),
+
+stdDay({day:60, icon:"🏆", title:"Saal Bhar Ki School Fees — Grand Finale", liveLabel:"School ki monthly fee kitni hai?", liveHint:"School office mein pata karein.", unit:"₹ / month", unitPhrase:"per month", sample:800,
+  qtyGen(){ return {qty:1}; },
+  scenario:p=>`Ek vidyarthi school ki monthly fee bharta hai.`,
+  scaleMultiplier:12, scaleLabel:"poore saal (12 mahine)"})
+];
+
+/* ---------- state ---------- */
+const PKEY='ajGanit5Progress_v1';
+function loadProgress(){
+  try{ const raw=localStorage.getItem(PKEY); if(raw) return JSON.parse(raw); }catch(e){}
+  return {startDate:null, completed:{}, streak:0, lastDate:null, totalSolved:0};
+}
+function saveProgress(p){ localStorage.setItem(PKEY, JSON.stringify(p)); }
+let progress = loadProgress();
+if(!progress.startDate){ progress.startDate = todayStr(); saveProgress(progress); }
+
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function daysBetween(a,b){ const d1=new Date(a), d2=new Date(b); return Math.round((d2-d1)/(1000*60*60*24)); }
+function isYesterday(dateStr){
+  if(!dateStr) return false;
+  const d=new Date(dateStr); const y=new Date(); y.setDate(y.getDate()-1);
+  return d.toDateString()===y.toDateString();
+}
+
+const TOTAL_DAYS = dayBank.length; // now 60
+let dayNumber = Math.min(TOTAL_DAYS, Math.max(1, daysBetween(progress.startDate, todayStr())+1));
+let currentViewDay = dayNumber;
+let currentParams = null;
+let liveValue = null;
+let adminMode = false;
+
+function getDay(d){ return dayBank.find(x=>x.day===d); }
+
+/* ---------- header/dots ---------- */
+function updateHeader(){
+  document.getElementById('streakVal').textContent = progress.streak;
+  document.getElementById('solvedVal').textContent = progress.totalSolved;
+  document.getElementById('dayNumLabel').textContent = dayNumber;
+  document.getElementById('totalDaysVal').textContent = TOTAL_DAYS;
+  const banner=document.getElementById('teacherBanner');
+  banner.innerHTML = adminMode ? `<div class="teacher-banner">🔑 Teacher Preview Mode — sample numbers, progress save nahi ho raha. <button class="btn btn-ghost" style="margin-left:8px;padding:4px 10px;font-size:0.75rem;" onclick="exitAdminMode()">Exit</button></div>` : '';
+}
+
+function renderDots(){
+  const wrap=document.getElementById('dotsRow');
+  wrap.innerHTML='';
+  dayBank.forEach(c=>{
+    const btn=document.createElement('button');
+    const locked = !adminMode && c.day>dayNumber;
+    btn.className='dot'+(progress.completed[c.day]&&!adminMode?' done':'')+((c.day===currentViewDay)?' active':'')+(locked?' locked':'');
+    btn.textContent = locked ? '🔒' : c.day;
+    btn.setAttribute('aria-label','Din '+c.day);
+    btn.disabled = locked;
+    btn.onclick=()=>{
+      if(locked){ showToast('🔒 Yeh challenge abhi lock hai — roz ek naya challenge khulta hai!'); return; }
+      currentViewDay=c.day; currentParams=null; liveValue=null;
+      renderDots(); renderCard();
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+/* ---------- card rendering ---------- */
+function renderCard(){
+  const c=getDay(currentViewDay);
+  if(!currentParams) currentParams=c.gen();
+  const card=document.getElementById('caseCard');
+  card.classList.remove('shake');
+
+  if(adminMode){
+    const previewLive = c.sample;
+    const r = c.calc(previewLive, currentParams);
+    let stepsHtml='';
+    c.steps.forEach((s,i)=>{
+      stepsHtml+=`<div class="step">
+        <span class="step-style">${s.style}</span>
+        <div class="step-q">Q${i+1}. ${s.q(previewLive,currentParams,r)}</div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--ink-soft);">✔ Sahi jawab (sample): <b>${s.ans(previewLive,currentParams,r)}</b> ${s.unit}</div>
+      </div>`;
+    });
+    card.innerHTML=`
+      <div class="case-head">
+        <div>
+          <div class="case-id">DIN #${String(c.day).padStart(2,'0')} — SAMPLE PREVIEW</div>
+          <div class="case-title">${c.title}</div>
+        </div>
+        <div class="icon-big">${c.icon}</div>
+      </div>
+      <div class="stage">
+        <div class="stage-label">Live value (student khud dalega):</div>
+        <div class="stage-hint">${c.liveLabel} <br>💡 ${c.liveHint} (${c.unit})</div>
+        <div style="font-family:'JetBrains Mono',monospace;">Sample ke liye maan lein: <b>₹${previewLive}</b></div>
+      </div>
+      ${stepsHtml}
+      <div class="action-row"><button class="btn btn-ghost" onclick="regeneratePreview()">🔁 Naye Sample Numbers</button></div>
+    `;
+    return;
+  }
+
+  const locked = currentViewDay>dayNumber;
+  if(locked){
+    card.innerHTML=`<div class="locked-msg"><span class="big">🔒</span>Yeh challenge abhi lock hai.<br>Roz ek naya challenge khulta hai — kal wapas aayein!</div>`;
+    return;
+  }
+
+  const alreadyDone = progress.completed[currentViewDay];
+  let stage1Html = `
+    <div class="stage" id="stage1">
+      <div class="stage-label">Sabse pehle — aaj ka asli number pata karke daalein:</div>
+      <div class="stage-hint">${c.liveLabel} <br>💡 ${c.liveHint}</div>
+      <div class="stage-row">
+        <input type="number" step="any" id="liveInput" aria-label="Live value">
+        <span class="unit-lbl">${c.unit}</span>
+      </div>
+      <div class="err-txt" id="liveErr">Kripya ek sahi (0 se bada) number daalein.</div>
+      <div class="action-row"><button class="btn btn-proceed" onclick="confirmLive()">✅ Aage Badhein — 5 Sawaal Dekhein</button></div>
+    </div>
+  `;
+
+  let stepsHtml = '';
+  if(liveValue!==null){
+    const r = c.calc(liveValue, currentParams);
+    c.steps.forEach((s,i)=>{
+      stepsHtml += `
+      <div class="step" id="step-${i}">
+        <span class="step-style">Q${i+1} · ${s.style}</span>
+        <div class="step-q">${s.q(liveValue,currentParams,r)}</div>
+        <div class="step-row">
+          <input type="number" step="any" id="inp-${i}" aria-label="Answer for question ${i+1}">
+          <span class="unit-lbl">${s.unit||''}</span>
+          <span class="mark" id="mark-${i}"></span>
+        </div>
+        <button class="hint-btn" onclick="toggleHint(${i})">💡 Hint</button>
+        <div class="hint-text" id="hint-${i}">${s.hint(currentParams,r)}</div>
+      </div>`;
+    });
+    stepsHtml += `
+      <div class="action-row">
+        <button class="btn btn-verify" onclick="verifyAll()">✅ SAARE 5 VERIFY KAREIN</button>
+        <button class="btn btn-sound" onclick="speakAll()">🔊 Suniye</button>
+        <button class="btn btn-ghost" onclick="regenerateSameLive()">🔁 Naye Sawaal</button>
+      </div>`;
+  }
+
+  card.innerHTML=`
+    <div class="case-head">
+      <div>
+        <div class="case-id">DIN #${String(c.day).padStart(2,'0')}${alreadyDone?' · ✅ Aaj poora ho gaya!':''}</div>
+        <div class="case-title">${c.title}</div>
+      </div>
+      <div class="icon-big">${c.icon}</div>
+    </div>
+    ${stage1Html}
+    ${stepsHtml}
+  `;
+}
+
+function confirmLive(){
+  const inp=document.getElementById('liveInput');
+  const val=parseFloat(inp.value);
+  const err=document.getElementById('liveErr');
+  if(isNaN(val) || val<=0){ err.classList.add('show'); return; }
+  err.classList.remove('show');
+  liveValue=val;
+  renderCard();
+}
+
+function regenerateSameLive(){
+  const c=getDay(currentViewDay);
+  currentParams=c.gen();
+  renderCard();
+}
+function regeneratePreview(){
+  const c=getDay(currentViewDay);
+  currentParams=c.gen();
+  renderCard();
+}
+
+function toggleHint(i){ document.getElementById('hint-'+i).classList.toggle('show'); }
+
+function speakAll(){
+  try{
+    const texts=[];
+    document.querySelectorAll('.step-q').forEach(el=>texts.push(el.innerText));
+    const utter=new SpeechSynthesisUtterance(texts.join('. '));
+    const voices=speechSynthesis.getVoices();
+    const inVoice=voices.find(v=>v.lang==='en-IN') || voices.find(v=>v.lang && v.lang.startsWith('en'));
+    if(inVoice) utter.voice=inVoice;
+    utter.rate=0.95;
+    speechSynthesis.cancel(); speechSynthesis.speak(utter);
+  }catch(e){}
+}
+
+function isCorrect(user, correct){
+  if(isNaN(user)) return false;
+  const tol=Math.max(0.5, Math.abs(correct)*0.02);
+  return Math.abs(user-correct)<=tol;
+}
+
+function verifyAll(){
+  const c=getDay(currentViewDay);
+  const r=c.calc(liveValue,currentParams);
+  let allCorrect=true;
+  c.steps.forEach((s,i)=>{
+    const inp=document.getElementById('inp-'+i);
+    const stepDiv=document.getElementById('step-'+i);
+    const mark=document.getElementById('mark-'+i);
+    const user=parseFloat(inp.value);
+    const correct=s.ans(liveValue,currentParams,r);
+    const ok=isCorrect(user,correct);
+    stepDiv.classList.remove('correct','wrong');
+    if(ok){ stepDiv.classList.add('correct'); mark.textContent='✅'; }
+    else{ stepDiv.classList.add('wrong'); mark.textContent='❌'; allCorrect=false; }
+  });
+
+  if(allCorrect){
+    playFanfare(); showStamp(); markDaySolved(currentViewDay);
+  }else{
+    playWrong();
+    const card=document.getElementById('caseCard');
+    card.classList.add('shake'); setTimeout(()=>card.classList.remove('shake'),400);
+  }
+}
+
+function showStamp(){
+  const shell=document.querySelector('.case-shell');
+  const old=shell.querySelector('.stamp-wrap'); if(old) old.remove();
+  const wrap=document.createElement('div');
+  wrap.className='stamp-wrap';
+  wrap.innerHTML='<div class="stamp">SOLVED</div>';
+  shell.appendChild(wrap);
+  setTimeout(()=>{ if(wrap.parentNode) wrap.remove(); }, 2400);
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+function markDaySolved(day){
+  const firstTime = !progress.completed[day];
+  if(firstTime){ progress.completed[day]=true; progress.totalSolved+=1; }
+  const today=todayStr();
+  if(progress.lastDate!==today){
+    if(isYesterday(progress.lastDate)) progress.streak+=1; else progress.streak=1;
+    progress.lastDate=today;
+  }
+  saveProgress(progress);
+  updateHeader(); renderDots();
+
+  if(firstTime){
+    if([5,10,20,30,40,50].includes(progress.totalSolved)) showToast('🏅 Badge mila! '+progress.totalSolved+'/'+TOTAL_DAYS+' din poore ho gaye!');
+    if(progress.totalSolved===TOTAL_DAYS) setTimeout(()=>document.getElementById('certModal').classList.add('show'), 700);
+  }
+  if([3,7,15,30,45,60].includes(progress.streak)) showToast('🔥 '+progress.streak+' din ki streak! Bahut badhiya!');
+}
+
+/* ---------- teacher/admin ---------- */
+function toggleTeacherBox(){ document.getElementById('teacherBox').classList.toggle('show'); }
+function checkAdminCode(){
+  const val=document.getElementById('adminCodeInput').value.trim();
+  const err=document.getElementById('adminErr');
+  if(val===ADMIN_CODE){
+    adminMode=true; currentViewDay = currentViewDay || 1; currentParams=null;
+    document.getElementById('teacherBox').classList.remove('show');
+    err.textContent='';
+    updateHeader(); renderDots(); renderCard();
+  }else{
+    err.textContent='Galat code. Phir koshish karein.';
+  }
+}
+function exitAdminMode(){
+  adminMode=false; currentViewDay=dayNumber; currentParams=null; liveValue=null;
+  updateHeader(); renderDots(); renderCard();
+}
+
+/* ---------- certificate ---------- */
+function closeCertModal(){ document.getElementById('certModal').classList.remove('show'); }
+function downloadCertificate(){
+  const name=document.getElementById('certName').value.trim() || 'Vidyarthi';
+  const canvas=document.createElement('canvas'); canvas.width=1200; canvas.height=850;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#141924'; ctx.fillRect(0,0,1200,850);
+  ctx.fillStyle='#E4E8ED'; ctx.fillRect(40,40,1120,770);
+  ctx.strokeStyle='#c98a2c'; ctx.lineWidth=6; ctx.strokeRect(65,65,1070,720);
+  ctx.fillStyle='#20242b'; ctx.textAlign='center';
+  ctx.font='700 26px Nunito, sans-serif';
+  ctx.fillText('SSVM GHATSILA — AAJ KA GANIT', 600, 150);
+  ctx.font='700 50px Georgia, serif';
+  ctx.fillText('60 DIN KA CHAMPION', 600, 230);
+  ctx.font='italic 24px Georgia, serif';
+  ctx.fillText('Yeh certificate pramanit karta hai ki', 600, 320);
+  ctx.font='700 46px Georgia, serif'; ctx.fillStyle='#a3342a';
+  ctx.fillText(name, 600, 400);
+  ctx.fillStyle='#20242b'; ctx.font='24px Georgia, serif';
+  ctx.fillText('ne 60 din tak roz ke 5-sawaal live maths challenge safaltapoorvak poore kiye', 600, 460);
+  ctx.font='700 22px monospace';
+  ctx.fillText('Streak: '+progress.streak+' din  |  Total Solved: '+progress.totalSolved+'/'+TOTAL_DAYS, 600, 520);
+  ctx.font='bold 130px sans-serif'; ctx.fillText('📅', 600, 660);
+  ctx.font='16px monospace'; ctx.fillStyle='#4a5260';
+  ctx.fillText('Tarikh: '+new Date().toLocaleDateString('en-IN'), 600, 740);
+  const link=document.createElement('a');
+  link.download='AajKaGanitChampion_'+name.replace(/\s+/g,'_')+'.png';
+  link.href=canvas.toDataURL('image/png'); link.click();
+}
+
+/* ---------- init ---------- */
+function init(){
+  updateHeader();
+  renderDots();
+  renderCard();
+  if('speechSynthesis' in window){ speechSynthesis.onvoiceschanged=()=>{}; }
+}
+init();
+</script>
+</body>
+</html>
