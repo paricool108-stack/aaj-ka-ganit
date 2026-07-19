@@ -211,6 +211,7 @@ const ADMIN_CODE = "7861"; // Teacher-only code — change this value to whateve
 /* ---------- helpers ---------- */
 function rand(min,max,dec=0){ const v=Math.random()*(max-min)+min; const f=Math.pow(10,dec); return Math.round(v*f)/f; }
 function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function randChoice(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 function lbl(cfg,p){ return typeof cfg.scaleLabel==='function' ? cfg.scaleLabel(p) : cfg.scaleLabel; }
 function mult(cfg,p){ return typeof cfg.scaleMultiplier==='function' ? cfg.scaleMultiplier(p) : cfg.scaleMultiplier; }
 
@@ -237,43 +238,54 @@ function playCorrect(){ tone(660,0.12,'triangle',0.2); tone(880,0.14,'triangle',
 function playWrong(){ tone(160,0.25,'sawtooth',0.18); }
 function playFanfare(){ tone(523,0.16,'triangle',0.22,0); tone(659,0.16,'triangle',0.22,0.15); tone(784,0.3,'triangle',0.24,0.3); playStamp(); }
 
-/* ---------- generic day builder: 5 related, differently-styled questions ---------- */
+/* ---------- 8 structurally different question-set templates ---------- */
+/* ---------- unified realistic "Google-search + EMI/installment" question chain ---------- */
+function baseAns1(live,p,cfg){
+  const divisor = cfg.qtyDivisor||1;
+  return +(live*p.qty/divisor).toFixed(2);
+}
+/* Har din: (1) live price khud khoj kar total nikalna [Multiplication]
+            (2) advance minus karke baaki rashi [Subtraction]
+            (3) installments mein baantna [Division]
+            (4) processing/GST/bank fee lagna [Percentage]
+            (5) logon mein baant kar average nikalna [Division + Average] */
 function stdDay(cfg){
   return {
-    day:cfg.day, icon:cfg.icon, title:cfg.title,
-    liveLabel:cfg.liveLabel, liveHint:cfg.liveHint, unit:cfg.unit, sample:cfg.sample,
+    day:cfg.day, icon:cfg.icon, title:cfg.title, liveLabel:cfg.liveLabel, liveHint:cfg.liveHint, unit:cfg.unit, sample:cfg.sample,
     gen(){
-      const extra = cfg.qtyGen();
-      const pct = randInt(5,25);
-      const pctType = Math.random()<0.5 ? 'discount':'increase';
-      const budgetFactor = rand(0.6,1.4,2);
-      return Object.assign({}, extra, {pct, pctType, budgetFactor});
+      const extra=cfg.qtyGen();
+      const advanceFactor=rand(0.2,0.6,2);
+      const periodType=randChoice(['hafte','mahine','din']);
+      const installments = periodType==='mahine' ? randInt(3,6) : periodType==='hafte' ? randInt(3,8) : randInt(5,15);
+      const feePct=randInt(2,10);
+      const feeLabel=randChoice(['processing shulk','GST','bank shulk','sewa shulk']);
+      const splitN=randInt(2,6);
+      const peopleLabel=randChoice(['parivar ke sadasya','dost','grahak','sathi']);
+      return Object.assign({}, extra, {advanceFactor, periodType, installments, feePct, feeLabel, splitN, peopleLabel});
     },
     calc(live,p){
-      const divisor = cfg.qtyDivisor||1;
-      const ans1 = +(live*p.qty/divisor).toFixed(2);
-      const m = mult(cfg,p);
-      const ans2 = +(ans1*m).toFixed(2);
-      const ans3 = p.pctType==='discount' ? +(ans1*(1-p.pct/100)).toFixed(2) : +(ans1*(1+p.pct/100)).toFixed(2);
-      const budget = +(ans2*p.budgetFactor).toFixed(2);
-      const ans4 = ans2<=budget ? 1:0;
-      const ans5 = +Math.max(0,budget-ans2).toFixed(2);
-      return {ans1,ans2,ans3,budget,ans4,ans5,mult:m};
+      const ans1=baseAns1(live,p,cfg);
+      const advance=+(ans1*p.advanceFactor).toFixed(2);
+      const ans2=+(ans1-advance).toFixed(2);
+      const ans3=+(ans2/p.installments).toFixed(2);
+      const ans4=+(ans3*(1+p.feePct/100)).toFixed(2);
+      const ans5=+(ans4/p.splitN).toFixed(2);
+      return {ans1,ans2,ans3,ans4,ans5,advance};
     },
     steps:[
-      {style:'BASIC HISAAB', q:(live,p,r)=>`${cfg.scenario(p)} Agar rate <b>₹${live}</b> ${cfg.unitPhrase} hai, to iske liye kitna paisa lagega?`, unit:'₹', ans:(live,p,r)=>r.ans1, hint:()=>'Rate × Quantity (seedha guna karein)'},
-      {style:'SCALE KARKE', q:(live,p,r)=>`Agar isi cheez ki zarurat <b>${lbl(cfg,p)}</b> ke liye ho (yani ${r.mult}× zyada), to total kharch kitna hoga?`, unit:'₹', ans:(live,p,r)=>r.ans2, hint:(p,r)=>'Step 1 ka jawab × '+r.mult},
-      {style:'PERCENTAGE', q:(live,p,r)=>`Agar isme ${p.pct}% ka ${p.pctType==='discount'?'discount mil jaaye':'extra kharch (jaise tax) lag jaaye'}, to Step 1 wale kharch (₹${r.ans1}) ka naya total kitna hoga?`, unit:'₹', ans:(live,p,r)=>r.ans3, hint:(p)=>p.pctType==='discount' ? 'Kharch − (kharch × %)' : 'Kharch + (kharch × %)'},
-      {style:'FAISLA (YES/NO)', q:(live,p,r)=>`Agar budget <b>₹${r.budget}</b> hai, kya ${lbl(cfg,p)} ka poora kharch (Step 2 wala, ₹${r.ans2}) is budget mein ho sakta hai? (1 = Haan, 0 = Nahi)`, unit:'', ans:(live,p,r)=>r.ans4, hint:()=>'Budget ko Step 2 ke total se compare karein'},
-      {style:'ANTAR (DIFFERENCE)', q:(live,p,r)=>`Budget (₹${r.budget}) aur Step 2 ke kharch (₹${r.ans2}) ke beech kitna antar hai? (agar kharch zyada hai to 0 likhein)`, unit:'₹', ans:(live,p,r)=>r.ans5, hint:()=>'Budget − Step 2 ka kharch (negative ho to 0)'}
+      {style:'KHOJ + MULTIPLICATION', q:(live,p,r)=>`${cfg.scenario(p)} Agar rate <b>₹${live}</b> ${cfg.unitPhrase} hai, to iske liye kitna paisa dena hoga?`, unit:'₹', ans:(live,p,r)=>r.ans1, hint:()=>'Rate × Quantity'},
+      {style:'BAAKI RASHI (SUBTRACTION)', q:(live,p,r)=>`Is rashi (₹${r.ans1}) mein se <b>₹${r.advance}</b> ka bhugtan pehle hi kiya jaa chuka hai. Ab kitni rashi dena baaki hai?`, unit:'₹', ans:(live,p,r)=>r.ans2, hint:()=>'Total − Advance'},
+      {style:'INSTALLMENT (DIVISION)', q:(live,p,r)=>`Bachi hui rashi (₹${r.ans2}) ko <b>${p.installments} baraabar ${p.periodType}</b> mein chukana hai. Har ${p.periodType==='mahine'?'mahine':p.periodType==='hafte'?'hafte':'din'} kitna dena hoga?`, unit:'₹', ans:(live,p,r)=>r.ans3, hint:(p)=>`Bachi hui rashi ÷ ${p.installments}`},
+      {style:'FEE (PERCENTAGE)', q:(live,p,r)=>`Agar har installment par <b>${p.feePct}%</b> extra ${p.feeLabel} lage, to ek installment ki total rashi kitni hogi?`, unit:'₹', ans:(live,p,r)=>r.ans4, hint:()=>'Installment + (Installment × %)'},
+      {style:'BAANTNA + AVERAGE', q:(live,p,r)=>`Agar yeh installment amount (₹${r.ans4}) <b>${p.splitN} ${p.peopleLabel}</b> mein barabar baanta jaaye, to har ek ka (average) bhugtan kitna hoga?`, unit:'₹', ans:(live,p,r)=>r.ans5, hint:(p)=>`Installment ÷ ${p.splitN}`}
     ]
   };
 }
 
-/* ---------- 30 day configs ---------- */
+/* ---------- 60 day configs (each follows the same realistic search+EMI chain, with different real-life item, quantity, and randomised period/fee/split labels each time) ---------- */
 const dayBank = [
 stdDay({day:1, icon:"🪙", title:"Sone Ka Hisaab", liveLabel:"Aaj sone (Gold) ka rate 10 gram ka kya hai?", liveHint:"Google/newspaper mein 'aaj gold rate' dekh kar pata karein.", unit:"₹ / 10 gram", unitPhrase:"per 10 gram", sample:72000,
-  qtyGen(){ return {qty:randInt(5,60)}; }, qtyDivisor:10,
+  qtyGen(){ return {qty:randInt(5,60)}; }, qtyDivisor:10, qtyUnitWord:"gram",
   scenario:p=>`Meera ko ek shaadi ke liye <b>${p.qty} gram</b> sona khareedna hai.`,
   scaleMultiplier:2, scaleLabel:"double gram (2×)"}),
 
@@ -303,7 +315,7 @@ stdDay({day:6, icon:"🧅", title:"Pyaz Ka Bill", liveLabel:"Aaj pyaz (onion) ka
   scaleMultiplier:2, scaleLabel:"double order (2×)"}),
 
 stdDay({day:7, icon:"⚪", title:"Chandi Ka Hisaab", liveLabel:"Aaj chandi (silver) ka rate 10 gram ka kya hai?", liveHint:"Sunar (jeweller) se ya Google par pata karein.", unit:"₹ / 10 gram", unitPhrase:"per 10 gram", sample:950,
-  qtyGen(){ return {qty:randInt(20,200)}; }, qtyDivisor:10,
+  qtyGen(){ return {qty:randInt(20,200)}; }, qtyDivisor:10, qtyUnitWord:"gram",
   scenario:p=>`Ek dukaandar ko <b>${p.qty} gram</b> chandi khareedni hai.`,
   scaleMultiplier:2, scaleLabel:"double quantity (2×)"}),
 
@@ -313,7 +325,7 @@ stdDay({day:8, icon:"💵", title:"Dollar Se Rupaye", liveLabel:"Aaj 1 US Dollar
   scaleMultiplier:2, scaleLabel:"double amount (2×)"}),
 
 stdDay({day:9, icon:"🥚", title:"Ande Ka Hisaab", liveLabel:"Aaj ande (egg) ke ek dozen (12 ande) ka price kya hai?", liveHint:"Dukaan par ya online dekh kar pata karein.", unit:"₹ / dozen", unitPhrase:"per dozen", sample:84,
-  qtyGen(){ return {qty:randInt(15,80)}; }, qtyDivisor:12,
+  qtyGen(){ return {qty:randInt(15,80)}; }, qtyDivisor:12, qtyUnitWord:"ande",
   scenario:p=>`Ek hostel mess ko <b>${p.qty} ande</b> chahiye.`,
   scaleMultiplier:4, scaleLabel:"mahine bhar (4 hafte)"}),
 
@@ -338,7 +350,7 @@ stdDay({day:13, icon:"🌾", title:"Atta Ka Bill", liveLabel:"Aaj atta (wheat fl
   scaleMultiplier:2, scaleLabel:"double quantity (2×)"}),
 
 stdDay({day:14, icon:"🍃", title:"Chai Patti Ka Hisaab", liveLabel:"Aaj chai patti (tea leaves) ka rate per kg kya hai?", liveHint:"Kirana dukaan mein dekhein.", unit:"₹ / kg", unitPhrase:"per kg", sample:400,
-  qtyGen(){ return {qty:randInt(100,1000)}; }, qtyDivisor:1000,
+  qtyGen(){ return {qty:randInt(100,1000)}; }, qtyDivisor:1000, qtyUnitWord:"gram",
   scenario:p=>`Ek dukaandar ko <b>${p.qty} gram</b> chai patti khareedni hai.`,
   scaleMultiplier:2, scaleLabel:"double quantity (2×)"}),
 
